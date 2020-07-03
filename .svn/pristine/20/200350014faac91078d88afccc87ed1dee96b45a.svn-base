@@ -1,0 +1,179 @@
+<template>
+  <el-dialog>
+    <el-form :model="form">
+      <el-form-item label="上传文件" :label-width="formLabelWidth" v-show="!hiddenUpload">
+        <el-upload
+          ref="uploadExcel"
+          action="action"
+          :limit="getLimit"
+          :auto-upload="false"
+          accept="getAccept"
+          :before-upload="beforeUploadFile"
+          :on-change="fileChange"
+          :on-exceed="exceedFile"
+          :on-success="handleSuccess"
+          :on-error="handleError"
+          :file-list="fileList">
+          <el-button size="small" plain>选择文件</el-button>
+          <div slot="tip" class="el-upload__tip" v-if="tip != ''">{{tip}}</div>
+        </el-upload>
+      </el-form-item>
+      <el-form-item v-if="!hiddenResult">
+        <el-table
+          :data="dataList"
+          border
+          style="width: 100%;">
+          <el-table-column
+            prop="num"
+            header-align="center"
+            align="center"
+            label="序号">
+          </el-table-column>
+          <el-table-column
+            prop="content"
+            header-align="center"
+            align="center"
+            label="导入内容">
+          </el-table-column>
+          <el-table-column
+            prop="errorMsg"
+            header-align="center"
+            align="center"
+            label="错误信息">
+          </el-table-column>
+        </el-table>
+      </el-form-item>
+      <el-form-item>
+        <el-link :href="templateUrl">模板下载</el-link>
+        <el-button size="small" type="primary" @click="uploadFile">立即上传</el-button>
+        <el-button size="small">取消</el-button>
+      </el-form-item>
+    </el-form>
+  </el-dialog>
+</template>
+
+<script>
+  export default {
+    name: 'file-upload',
+    data () {
+      return {
+        limitNum: 1,
+        formLabelWidth: '80px',
+        form: {
+          file: ''
+        },
+        fileList: [],
+        hiddenUpload: false,
+        dataList: [],
+        hiddenResult: true
+      }
+    },
+    props: {
+      action: {
+        type: String,
+        required: true
+      },
+      templateUrl: {
+        type: String
+      },
+      limit: {
+        type: Number
+      },
+      accept: {
+        type: String
+      },
+      tip: {
+        type: String
+      },
+      showResult: {
+        type: Boolean
+      }
+    },
+    computed: {
+      getLimit () {
+        if (this.limit === undefined) {
+          return 1
+        } else {
+          return this.limit
+        }
+      },
+      getAccept () {
+        if (this.accept === undefined) {
+          return ''
+        } else {
+          return this.accept
+        }
+      },
+      getShowResult () {
+        if (this.showResult === undefined) {
+          return true
+        } else {
+          return this.showResult
+        }
+      }
+    },
+    methods: {
+      // 文件超出个数限制时的钩子
+      exceedFile (files, fileList) {
+        this.$notify.warning({
+          title: '警告',
+          message: `只能选择 ${this.getLimit()} 个文件，当前共选择了 ${files.length + fileList.length} 个`
+        })
+      },
+      // 文件状态改变时的钩子
+      fileChange (file, fileList) {
+        console.log('change')
+        console.log(file)
+        this.form.file = file.raw
+        console.log(this.form.file)
+        console.log(fileList)
+      },
+      // 上传文件之前的钩子, 参数为上传的文件,若返回 false 或者返回 Promise 且被 reject，则停止上传
+      beforeUploadFile (file) {
+        console.log('before upload')
+        console.log(file)
+        // let extension = file.name.substring(file.name.lastIndexOf('.') + 1)
+        let size = file.size / 1024 / 1024
+        // if (extension !== 'xlsx') {
+        //   this.$notify.warning({
+        //     title: '警告',
+        //     message: `只能上传Excel2017（即后缀是.xlsx）的文件`
+        //   })
+        // }
+        if (size > 10) {
+          this.$notify.warning({
+            title: '警告',
+            message: `文件大小不得超过10M`
+          })
+        }
+      },
+      // 文件上传成功时的钩子
+      handleSuccess (res, file, fileList) {
+        this.$notify.success({
+          title: '成功',
+          message: `文件上传成功`
+        })
+        if (this.getShowResult()) {
+          this.dataList = res.errorData
+          this.hiddenResult = false
+          this.hiddenUpload = true
+        }
+      },
+      // 文件上传失败时的钩子
+      // eslint-disable-next-line handle-callback-err
+      handleError (err, file, fileList) {
+        this.$notify.error({
+          title: '错误',
+          message: `文件上传失败`
+        })
+      },
+      uploadFile () {
+        this.$refs.uploadExcel.submit()
+      }
+    }
+  }
+</script>
+
+<style scoped>
+
+</style>
